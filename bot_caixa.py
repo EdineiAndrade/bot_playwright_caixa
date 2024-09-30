@@ -41,14 +41,23 @@ def clean_dataframe(df):
     return df
 
 def path_file():
+    # Obter a data e hora atual formatada
     now = datetime.now()
     formatted_date = now.strftime("%d-%m-%y_%H-%M-%S")
 
-    user_path = os.environ.get('USERPROFILE')
-    user_dw = os.path.join(user_path, 'Downloads')
-    path_file = os.path.join(user_dw, 'imoveis')
+    # Definir o caminho da pasta de downloads dependendo do sistema operacional
+    if os.name == 'nt':  # Windows
+        user_path = os.path.expanduser('~')
+        user_dw = os.path.join(user_path, 'Downloads')
+    else:  # macOS/Linux
+        user_path = os.path.expanduser('~')
+        user_dw = os.path.join(user_path, 'Downloads')
 
+    # Criar o caminho completo para o arquivo
+    path_file = os.path.join(user_dw, 'imoveis')
     name_file = os.path.join(path_file, f'baixados_{formatted_date}.csv')
+
+    # Verificar e recriar a pasta 'imoveis'
     if os.path.exists(path_file):
         shutil.rmtree(path_file)
     os.mkdir(path_file)
