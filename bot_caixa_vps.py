@@ -12,7 +12,7 @@ def get_download_directory():
     elif os.name == 'posix':  # macOS/Linux
         # Tenta obter a pasta de downloads usando xdg-user-dir
         try:
-            downloads_path = subprocess.check_output(['xdg-user-dir', 'DOWNLOAD']).decode('utf-8').strip()
+            downloads_path = 'root/Downloads'
         except FileNotFoundError:
             # Se xdg-user-dir não estiver disponível, usa a pasta Downloads padrão
             downloads_path = os.path.join(os.path.expanduser('~'), 'Downloads')
