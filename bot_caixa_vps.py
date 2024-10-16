@@ -6,12 +6,42 @@ import time
 import os
 import re
 
-def configurar_navegador():
-    name_file = path_file()
+def get_download_directory():
+    if os.name == 'nt':  # Windows
+        downloads_path = os.path.join(os.path.expanduser('~'), 'Downloads')
+    elif os.name == 'posix':  # macOS/Linux
+        # Tenta obter a pasta de downloads usando xdg-user-dir
+        try:
+            downloads_path = subprocess.check_output(['xdg-user-dir', 'DOWNLOAD']).decode('utf-8').strip()
+        except FileNotFoundError:
+            # Se xdg-user-dir não estiver disponível, usa a pasta Downloads padrão
+            downloads_path = os.path.join(os.path.expanduser('~'), 'Downloads')
+    else:
+        raise NotImplementedError(f"Sistema operacional não suportado: {os.name}")
+    # Criar o caminho completo para o arquivo
+    path_file = os.path.join(downloads_path, 'imoveis')
+    name_file = os.path.join(path_file, f'imoveis.csv')
+
+    # Verificar e recriar a pasta 'imoveis'
+    if os.path.exists(path_file):
+        shutil.rmtree(path_file)
+    os.mkdir(path_file)
+
+    return name_file
+
+def start_playwright():
+    name_file = get_download_directory()
+    # Obter o diretório de downloads adequado para Windows ou Linux/macOS
     downloads_path = os.path.dirname(name_file)
+    # Iniciar o Playwright e o navegador
     playwright = sync_playwright().start()
-    browser = playwright.chromium.launch(args=["--window-position=0,0"], headless=False, downloads_path=downloads_path)
+    browser = playwright.chromium.launch(
+        args=["--window-position=0,0"], 
+        headless=False, 
+        downloads_path=downloads_path
+    )
     page = browser.new_page()
+
     return playwright, browser, page, name_file
 
 def download_file(page, name_file):
@@ -39,26 +69,6 @@ def clean_dataframe(df):
     for col in df.columns:
         df[col] = df[col].apply(remove_illegal_characters)
     return df
-
-def path_file():
-    # Definir o caminho da pasta de downloads dependendo do sistema operacional
-    if os.name == 'nt':  # Windows
-        user_path = os.path.expanduser('~')
-        user_dw = os.path.join(user_path, 'Downloads')
-    else:  # macOS/Linux
-        user_path = os.path.expanduser('~')
-        user_dw = os.path.join(user_path, 'Downloads')
-
-    # Criar o caminho completo para o arquivo
-    path_file = os.path.join(user_dw, 'imoveis')
-    name_file = os.path.join(path_file, f'imoveis.csv')
-
-    # Verificar e recriar a pasta 'imoveis'
-    if os.path.exists(path_file):
-        shutil.rmtree(path_file)
-    os.mkdir(path_file)
-
-    return name_file
 
 def busca_site_caixa(page, name_file, df):
     numero_de_linhas = df.shape[0]
@@ -153,7 +163,7 @@ def imprimir_consulta(index, formatted_date, faltam, elapsed_time, remaining_tim
     
     print(output)  
 def main():
-    playwright, browser, page, name_file = configurar_navegador()
+    playwright, browser, page, name_file = start_playwright()
     try:
         df = download_file(page, name_file)
         busca_site_caixa(page, name_file, df)
